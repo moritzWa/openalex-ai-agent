@@ -1,21 +1,24 @@
 # OpenAlex AI Agent
 
-Simple tool-calling agent for exploring academic papers using OpenAlex API.
+Simple tool-calling agent for exploring academic papers using [OpenAlex API](https://openalex.org/).
 
 ## Setup
 
 1. **Install dependencies:**
+
 ```bash
 bun install
 ```
 
 2. **Add environment variables:**
+
 ```bash
 cp .env.example .env
 # Add your OpenAI API key to .env
 ```
 
 3. **Start server:**
+
 ```bash
 bun run dev
 ```
