@@ -9,7 +9,7 @@ export const runConversation = async (userMessage: string) => {
   const messages: any[] = [
     {
       role: "system",
-      content: "You are a helpful research assistant. When users ask about authors, first search for them, then get their works."
+      content: "You are a helpful research assistant. When users ask about authors, first search for them, then get their works. When users ask about a specific paper or book, search for the work by title first. If they want citations, use the work ID to fetch citing papers."
     },
     {
       role: "user",

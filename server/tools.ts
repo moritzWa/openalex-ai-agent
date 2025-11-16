@@ -28,10 +28,51 @@ export const getAuthorWorks = async (authorId: string, limit: number = 10) => {
   }));
 };
 
+export const searchWorks = async (workTitle: string) => {
+  const response = await fetch(
+    `https://api.openalex.org/works?search=${encodeURIComponent(workTitle)}&per_page=5`
+  );
+  const data = await response.json() as any;
+
+  return data.results.map((work: any) => ({
+    id: work.id,
+    title: work.display_name,
+    year: work.publication_year,
+    authors: work.authorships?.map((a: any) => a.author.display_name).join(", ") || "Unknown",
+    cited_by_count: work.cited_by_count
+  }));
+};
+
+export const getWorkCitations = async (workId: string, limit: number = 20) => {
+  // Extract just the ID if full URL is provided
+  const id = workId.includes('/') ? workId.split('/').pop() : workId;
+
+  // Fetch 200 results (max per_page for OpenAlex API) to get the most cited ones
+  const response = await fetch(
+    `https://api.openalex.org/works?filter=cites:${id}&per_page=200`
+  );
+  const data = await response.json() as any;
+
+  const slimmed = data.results.map((work: any) => ({
+    id: work.id,
+    title: work.display_name,
+    year: work.publication_year,
+    authors: work.authorships?.map((a: any) => a.author.display_name).join(", ") || "Unknown",
+    cited_by_count: work.cited_by_count
+  }));
+
+  // Sort by citation count (descending) and take top N
+  return slimmed
+    .sort((a: any, b: any) => b.cited_by_count - a.cited_by_count)
+    .slice(0, limit);
+};
+
 // Map tool names to actual functions
 export const availableTools: Record<string, Function> = {
   searchAuthors,
-  getAuthorWorks
+  getAuthorWorks,
+  searchWorks,
+  getWorkCitations
 };
 
 // Tool definitions for OpenAI
@@ -71,6 +112,44 @@ export const toolDefinitions = [
           }
         },
         required: ["authorId"]
+      }
+    }
+  },
+  {
+    type: "function" as const,
+    function: {
+      name: "searchWorks",
+      description: "Search for papers/works by title. Returns work IDs, titles, and metadata. Use this FIRST when user asks about a specific paper or book.",
+      parameters: {
+        type: "object",
+        properties: {
+          workTitle: {
+            type: "string",
+            description: "The title of the work/paper to search for"
+          }
+        },
+        required: ["workTitle"]
+      }
+    }
+  },
+  {
+    type: "function" as const,
+    function: {
+      name: "getWorkCitations",
+      description: "Get papers that cite a specific work. Returns the most cited papers that reference the given work.",
+      parameters: {
+        type: "object",
+        properties: {
+          workId: {
+            type: "string",
+            description: "The OpenAlex work ID (format: https://openalex.org/W... or just W...)"
+          },
+          limit: {
+            type: "number",
+            description: "Number of citations to return (default 20, max 100)"
+          }
+        },
+        required: ["workId"]
       }
     }
   }
